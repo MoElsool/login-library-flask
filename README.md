@@ -1,6 +1,10 @@
 # Lab 3: Foreign Keys and Simple SQL
+## 1. Team
 
-Mohamed Osama - 2304071 - Group 1, Section 1
+| Name | ID 
+|------|----
+| Mohamed Osama | 2304071
+| Seif El-din Tarek | 2304080 
 
 Introduction to Database Systems, Alexandria National University, Fall 2026.
 
@@ -78,7 +82,7 @@ The library pages need a logged-in user, like the to-do list. A visitor who is n
 
 ## 5. Lab 2 features (login and to-do)
 
-The Lab 2 application was made together with Seif El-din Tarek (2304080), as described in the Lab 2 report. It is unchanged, except for a **Library** link on the to-do page.
+The Lab 2 application as described in the Lab 2 report. It is unchanged, except for a **Library** link on the to-do page.
 
 - **Register and login:** name, e-mail and password with bcrypt hashes. A duplicate e-mail shows `Email Already Exists`, a wrong login shows `Invalid email or password`.
 - **Private to-do list:** add, edit, mark as done and delete, only for the logged-in user. `UPDATE` and `DELETE` always contain `AND user_id = %s`.
