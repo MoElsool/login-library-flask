@@ -4,7 +4,17 @@ import glob
 import pymysql
 import bcrypt
 from dotenv import load_dotenv
-from flask import Flask, render_template, request, redirect, url_for, session, flash, abort, send_from_directory
+from flask import (
+    Flask,
+    render_template,
+    request,
+    redirect,
+    url_for,
+    session,
+    flash,
+    abort,
+    send_from_directory,
+)
 
 load_dotenv()
 
@@ -40,7 +50,7 @@ def validate_title(title):
 @app.route("/")
 def home():
     if "user_id" in session:
-        return redirect(url_for("todos"))
+        return redirect(url_for("library"))
     return redirect(url_for("login"))
 
 
@@ -92,7 +102,7 @@ def register():
 
             session["user_id"] = new_id
             session["name"] = name
-            return redirect(url_for("todos"))
+            return redirect(url_for("library"))
         except pymysql.err.IntegrityError as e:
             if e.args[0] == 1062:
                 flash("Email Already Exists", "error")
@@ -139,7 +149,7 @@ def login():
             ):
                 session["user_id"] = user["user_id"]
                 session["name"] = user["name"]
-                return redirect(url_for("todos"))
+                return redirect(url_for("library"))
             else:
                 flash("Invalid email or password", "error")
                 return render_template("login.html", email=email)
@@ -154,113 +164,6 @@ def login():
 def logout():
     session.clear()
     return redirect(url_for("login"))
-
-
-# ----------------- TODOS LIST -----------------
-@app.route("/todos", methods=["GET"])
-def todos():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    user_id = session["user_id"]
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            sql = "SELECT todo_id, title, is_done, created_at FROM todos WHERE user_id = %s ORDER BY todo_id DESC;"
-            cursor.execute(sql, (user_id,))
-            todo_list = cursor.fetchall()
-        return render_template("todos.html", todos=todo_list, name=session.get("name"))
-    finally:
-        conn.close()
-
-
-# ----------------- ADD TODO -----------------
-@app.route("/todos/add", methods=["POST"])
-def add_todo():
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    title = request.form.get("title", "").strip()
-    error = validate_title(title)
-    if error:
-        flash(error, "error")
-        return redirect(url_for("todos"))
-
-    user_id = session["user_id"]
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            sql = "INSERT INTO todos (user_id, title) VALUES (%s, %s);"
-            cursor.execute(sql, (user_id, title))
-        conn.commit()
-    finally:
-        conn.close()
-
-    return redirect(url_for("todos"))
-
-
-# ----------------- EDIT TODO -----------------
-@app.route("/todos/edit/<int:todo_id>", methods=["POST"])
-def edit_todo(todo_id):
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    title = request.form.get("title", "").strip()
-    error = validate_title(title)
-    if error:
-        flash(error, "error")
-        return redirect(url_for("todos"))
-
-    user_id = session["user_id"]
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            sql = "UPDATE todos SET title = %s WHERE todo_id = %s AND user_id = %s;"
-            cursor.execute(sql, (title, todo_id, user_id))
-        conn.commit()
-    finally:
-        conn.close()
-
-    return redirect(url_for("todos"))
-
-
-# ----------------- TOGGLE DONE -----------------
-@app.route("/todos/toggle/<int:todo_id>", methods=["POST"])
-def toggle_todo(todo_id):
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    is_done = 1 if request.form.get("is_done") == "1" else 0
-    user_id = session["user_id"]
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            sql = "UPDATE todos SET is_done = %s WHERE todo_id = %s AND user_id = %s;"
-            cursor.execute(sql, (is_done, todo_id, user_id))
-        conn.commit()
-    finally:
-        conn.close()
-
-    return redirect(url_for("todos"))
-
-
-# ----------------- DELETE TODO -----------------
-@app.route("/todos/delete/<int:todo_id>", methods=["POST"])
-def delete_todo(todo_id):
-    if "user_id" not in session:
-        return redirect(url_for("login"))
-
-    user_id = session["user_id"]
-    conn = get_db()
-    try:
-        with conn.cursor() as cursor:
-            sql = "DELETE FROM todos WHERE todo_id = %s AND user_id = %s;"
-            cursor.execute(sql, (todo_id, user_id))
-        conn.commit()
-    finally:
-        conn.close()
-
-    return redirect(url_for("todos"))
 
 
 LIBRARY_IMAGE_TYPES = {"png", "jpg", "jpeg", "webp", "gif"}
@@ -368,7 +271,9 @@ def check_book(title, price, author_id, pages):
         errors.append("Pages must be a whole number between 1 and 100000")
     if not author_id:
         errors.append("Author is required")
-    elif not run_library("SELECT author_id FROM author WHERE author_id = %s;", (author_id,), fetch="one"):
+    elif not run_library(
+        "SELECT author_id FROM author WHERE author_id = %s;", (author_id,), fetch="one"
+    ):
         errors.append("This author does not exist")
     return errors
 
@@ -395,7 +300,9 @@ def library():
         b["cover"] = image_for("books", b["book_id"])
     for a in authors:
         a["photo"] = image_for("authors", a["author_id"])
-    return render_template("library.html", books=books, authors=authors, name=session.get("name"))
+    return render_template(
+        "library.html", books=books, authors=authors, name=session.get("name")
+    )
 
 
 @app.route("/library/books/<int:book_id>")
@@ -403,12 +310,18 @@ def book_detail(book_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    book = run_library("SELECT * FROM book WHERE book_id = %s;", (book_id,), fetch="one")
+    book = run_library(
+        "SELECT * FROM book WHERE book_id = %s;", (book_id,), fetch="one"
+    )
     if book is None:
         abort(404)
-    author = run_library("SELECT * FROM author WHERE author_id = %s;", (book["author_id"],), fetch="one")
+    author = run_library(
+        "SELECT * FROM author WHERE author_id = %s;", (book["author_id"],), fetch="one"
+    )
     book["cover"] = image_for("books", book_id)
-    return render_template("book_detail.html", book=book, author=author, has_file=has_book_file(book_id))
+    return render_template(
+        "book_detail.html", book=book, author=author, has_file=has_book_file(book_id)
+    )
 
 
 @app.route("/library/books/read/<int:book_id>")
@@ -418,7 +331,9 @@ def read_book(book_id):
 
     if not has_book_file(book_id):
         abort(404)
-    return send_from_directory(book_dir, str(book_id) + ".pdf", mimetype="application/pdf")
+    return send_from_directory(
+        book_dir, str(book_id) + ".pdf", mimetype="application/pdf"
+    )
 
 
 @app.route("/library/books/add", methods=["GET", "POST"])
@@ -436,8 +351,15 @@ def add_book():
         if errors:
             for err in errors:
                 flash(err, "error")
-            form = {"title": title, "price": price, "author_id": author_id, "pages": pages}
-            return render_template("book_form.html", book=form, authors=authors, editing=False)
+            form = {
+                "title": title,
+                "price": price,
+                "author_id": author_id,
+                "pages": pages,
+            }
+            return render_template(
+                "book_form.html", book=form, authors=authors, editing=False
+            )
 
         new_id = run_library(
             "INSERT INTO book (title, price, author_id, pages) VALUES (%s, %s, %s, %s);",
@@ -457,7 +379,9 @@ def edit_book(book_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    book = run_library("SELECT * FROM book WHERE book_id = %s;", (book_id,), fetch="one")
+    book = run_library(
+        "SELECT * FROM book WHERE book_id = %s;", (book_id,), fetch="one"
+    )
     if book is None:
         abort(404)
     authors = run_library("SELECT author_id, name FROM author ORDER BY name;")
@@ -479,7 +403,13 @@ def edit_book(book_id):
                 "pages": pages,
                 "cover": image_for("books", book_id),
             }
-            return render_template("book_form.html", book=form, authors=authors, editing=True, has_file=has_book_file(book_id))
+            return render_template(
+                "book_form.html",
+                book=form,
+                authors=authors,
+                editing=True,
+                has_file=has_book_file(book_id),
+            )
 
         run_library(
             "UPDATE book SET title = %s, price = %s, author_id = %s, pages = %s WHERE book_id = %s;",
@@ -492,7 +422,13 @@ def edit_book(book_id):
         return redirect(url_for("library"))
 
     book["cover"] = image_for("books", book_id)
-    return render_template("book_form.html", book=book, authors=authors, editing=True, has_file=has_book_file(book_id))
+    return render_template(
+        "book_form.html",
+        book=book,
+        authors=authors,
+        editing=True,
+        has_file=has_book_file(book_id),
+    )
 
 
 @app.route("/library/books/delete/<int:book_id>", methods=["POST"])
@@ -512,10 +448,14 @@ def author_detail(author_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    author = run_library("SELECT * FROM author WHERE author_id = %s;", (author_id,), fetch="one")
+    author = run_library(
+        "SELECT * FROM author WHERE author_id = %s;", (author_id,), fetch="one"
+    )
     if author is None:
         abort(404)
-    books = run_library("SELECT * FROM book WHERE author_id = %s ORDER BY book_id;", (author_id,))
+    books = run_library(
+        "SELECT * FROM book WHERE author_id = %s ORDER BY book_id;", (author_id,)
+    )
     for b in books:
         b["cover"] = image_for("books", b["book_id"])
     author["photo"] = image_for("authors", author_id)
@@ -554,7 +494,9 @@ def edit_author(author_id):
     if "user_id" not in session:
         return redirect(url_for("login"))
 
-    author = run_library("SELECT * FROM author WHERE author_id = %s;", (author_id,), fetch="one")
+    author = run_library(
+        "SELECT * FROM author WHERE author_id = %s;", (author_id,), fetch="one"
+    )
     if author is None:
         abort(404)
 
