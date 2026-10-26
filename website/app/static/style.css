@@ -242,35 +242,6 @@ a:focus-visible {
         border-color 0.2s ease;
 }
 
-.todo-item:hover {
-    transform: translateX(3px);
-    border-color: #c7c5ff;
-    box-shadow: 0 5px 15px rgba(70, 70, 140, 0.08);
-}
-
-.todo-item .edit-form {
-    flex: 1;
-    display: flex;
-    gap: 8px;
-    min-width: 200px;
-}
-
-.todo-item .edit-form input {
-    flex: 1;
-    min-width: 0;
-}
-
-/* Completed tasks */
-.todo-item.done {
-    background: #f0fdf4;
-    border-color: #bbf7d0;
-}
-
-.todo-item.done input[type="text"] {
-    text-decoration: line-through;
-    color: #888;
-    background: #f3f4f6;
-}
 
 /* Links */
 .switch-link {
