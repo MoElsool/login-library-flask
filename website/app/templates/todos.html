@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>To-Do</h2>
+            <div>Hi, {{ name }} | <a href="/library">Library</a> | <a href="/logout">Log out</a></div>
+        </div>
+
+        <p><strong>Open tasks: {{ todos | rejectattr('is_done') | list | length }}</strong></p>
+
+        {% with messages = get_flashed_messages(category_filter=["error"]) %}
+            {% for message in messages %}<div class="error">{{ message }}</div>{% endfor %}
+        {% endwith %}
+        <div id="clientErrors"></div>
+
+        <form action="/todos/add" method="POST" class="add-box" data-title-form novalidate>
+            <input type="text" name="title" placeholder="What needs to be done?">
+            <button type="submit">Add</button>
+        </form>
+
+        {% if not todos %}
+            <p class="empty">No tasks yet! Add one above.</p>
+        {% endif %}
+
+        {% for todo in todos %}
+        <div class="todo-item {% if todo.is_done %}done{% endif %}">
+            <form action="/todos/toggle/{{ todo.todo_id }}" method="POST">
+                <input type="hidden" name="is_done" value="{{ 0 if todo.is_done else 1 }}">
+                <input type="checkbox" aria-label="Mark done" onchange="this.form.submit()" {% if todo.is_done %}checked{% endif %}>
+            </form>
+
+            <form action="/todos/edit/{{ todo.todo_id }}" method="POST" class="edit-form" data-title-form novalidate>
+                <input type="text" name="title" value="{{ todo.title }}">
+                <button type="submit">Save</button>
+            </form>
+
+            <form action="/todos/delete/{{ todo.todo_id }}" method="POST" onsubmit="return confirm('Are you sure?');">
+                <button type="submit" class="btn-danger">Delete</button>
+            </form>
+        </div>
+        {% endfor %}
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

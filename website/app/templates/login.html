@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>To-Do</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+    <div class="card">
+        <h2>Login</h2>
+        {% with messages = get_flashed_messages(category_filter=["error"]) %}
+            {% for message in messages %}<div class="error">{{ message }}</div>{% endfor %}
+        {% endwith %}
+        <div id="clientErrors"></div>
+
+        <form action="/login" method="POST" id="loginForm" novalidate>
+            <div class="input-group">
+                <label for="email">Email</label>
+                <input type="text" id="email" name="email" value="{{ email or '' }}">
+            </div>
+            <div class="input-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password">
+            </div>
+            <button type="submit" class="btn">Login</button>
+        </form>
+        <p class="switch-link">Don't have an account? <a href="/register">Register</a></p>
+    </div>
+    <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body>
+</html>

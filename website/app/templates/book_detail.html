@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ book.title }}</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+    <div class="card">
+        {% if book.cover %}
+        <img class="detail-cover" src="{{ book.cover }}" alt="">
+        {% else %}
+        <div class="detail-cover thumb thumb-empty">{{ book.title[0] }}</div>
+        {% endif %}
+
+        <h2>{{ book.title }}</h2>
+
+        <dl class="detail-list">
+            <dt>Book ID</dt>
+            <dd>{{ book.book_id }}</dd>
+            <dt>Price</dt>
+            <dd>{{ book.price }}</dd>
+            {% if book.pages %}
+            <dt>Pages</dt>
+            <dd>{{ book.pages }}</dd>
+            {% endif %}
+            <dt>Author</dt>
+            <dd>{% if author %}<a href="{{ url_for('author_detail', author_id=author.author_id) }}">{{ author.name }}</a>{% endif %} (ID {{ book.author_id }})</dd>
+            {% if author and author.country %}
+            <dt>Country</dt>
+            <dd>{{ author.country }}</dd>
+            {% endif %}
+        </dl>
+
+        <div class="form-actions">
+            {% if has_file %}
+            <a class="btn" href="{{ url_for('read_book', book_id=book.book_id) }}" target="_blank">Read book</a>
+            {% endif %}
+            <a class="btn" href="{{ url_for('edit_book', book_id=book.book_id) }}">Edit</a>
+            <form action="{{ url_for('delete_book', book_id=book.book_id) }}" method="POST" onsubmit="return confirm('Are you sure?');">
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+            <a class="btn btn-secondary" href="{{ url_for('library') }}">Back to library</a>
+        </div>
+    </div>
+</body>
+</html>

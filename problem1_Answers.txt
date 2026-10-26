@@ -1,0 +1,85 @@
+Lab 3 - Problem 1 answers
+Student: Mohamed Osama - 2304071
+
+Run order:
+    mysql -u root -p < problem1_DDL.sql
+    mysql -u root -p < problem1_DML.sql
+    mysql -u root -p company
+
+
+Q1.1  Insert a row in DEPARTMENT that references a row in EMPLOYEE, then try to delete the referenced row.
+
+SQL:
+    INSERT INTO DEPARTMENT (Dnumber, Dname, mgr_ssn, mgr_start_date)
+    VALUES (4, 'Research', '321654987', '2024-02-01');
+
+    DELETE FROM EMPLOYEE WHERE ssn = '321654987';
+
+Output:
+    Query OK, 1 row affected (0.01 sec)
+
+    ERROR 1451 (23000): Cannot delete or update a parent row: a foreign key constraint fails (`company`.`department`, CONSTRAINT `fk_dept_mgr` FOREIGN KEY (`mgr_ssn`) REFERENCES `employee` (`ssn`))
+
+What happens: the insert works because employee 321654987 exists. The delete is rejected, because department 4 still has this employee as its manager, so deleting the employee would leave mgr_ssn pointing to nothing. The employee row is still in the table. To delete it, first change or delete the department that uses it.
+
+
+Q1.2  Insert a row in PROJECT that references a DEPARTMENT that doesn't exist yet.
+
+SQL:
+    INSERT INTO PROJECT (Pnumber, Pname, Plocation, Dno)
+    VALUES (50, 'Data Migration', 'Alexandria', 99);
+
+Output:
+    ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`company`.`project`, CONSTRAINT `fk_proj_dept` FOREIGN KEY (`Dno`) REFERENCES `department` (`Dnumber`))
+
+What happens: MySQL rejects the insert and no row is added, because there is no department with Dnumber 99. The department has to be inserted first, then the project. Using NULL for Dno would also be accepted.
+
+
+Q1.3  If mgr_ssn and Dno are both NOT NULL, how do you insert the first row in EMPLOYEE or DEPARTMENT?
+
+Each table needs a row that is in the other table first: an employee needs an existing department and a department needs an existing employee as manager, so neither can go first. I tried it in a separate database called q13 so the company data stays untouched.
+
+SQL:
+    DROP DATABASE IF EXISTS q13;
+    CREATE DATABASE q13;
+    USE q13;
+
+    CREATE TABLE EMPLOYEE (
+        ssn CHAR(9) NOT NULL,
+        fname VARCHAR(30),
+        Dno INT NOT NULL,
+        PRIMARY KEY (ssn)
+    );
+    CREATE TABLE DEPARTMENT (
+        Dnumber INT NOT NULL,
+        Dname VARCHAR(30),
+        mgr_ssn CHAR(9) NOT NULL,
+        PRIMARY KEY (Dnumber)
+    );
+    ALTER TABLE EMPLOYEE ADD FOREIGN KEY (Dno) REFERENCES DEPARTMENT(Dnumber);
+    ALTER TABLE DEPARTMENT ADD FOREIGN KEY (mgr_ssn) REFERENCES EMPLOYEE(ssn);
+
+    INSERT INTO EMPLOYEE VALUES ('111111111', 'Ahmed', 1);
+    INSERT INTO DEPARTMENT VALUES (1, 'Engineering', '111111111');
+
+Output:
+    ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`q13`.`employee`, CONSTRAINT `employee_ibfk_1` FOREIGN KEY (`Dno`) REFERENCES `department` (`Dnumber`))
+    ERROR 1452 (23000): Cannot add or update a child row: a foreign key constraint fails (`q13`.`department`, CONSTRAINT `department_ibfk_1` FOREIGN KEY (`mgr_ssn`) REFERENCES `employee` (`ssn`))
+
+Both inserts fail. The way out is to turn the foreign key check off for the first rows, insert both, then turn it back on:
+
+SQL:
+    SET FOREIGN_KEY_CHECKS = 0;
+    INSERT INTO EMPLOYEE VALUES ('111111111', 'Ahmed', 1);
+    INSERT INTO DEPARTMENT VALUES (1, 'Engineering', '111111111');
+    SET FOREIGN_KEY_CHECKS = 1;
+
+Output:
+    Query OK, 0 rows affected (0.00 sec)
+    Query OK, 1 row affected (0.01 sec)
+    Query OK, 1 row affected (0.00 sec)
+    Query OK, 0 rows affected (0.00 sec)
+
+The other way, which is what I did in problem1_DML.sql, is to leave one of the two columns nullable: insert the employees with Dno = NULL, insert the departments, then UPDATE the employees' Dno.
+
+    DROP DATABASE q13;

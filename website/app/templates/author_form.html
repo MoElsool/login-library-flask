@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Library</title>
+    <link rel="icon" href="data:,">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='theme.js') }}"></script>
+</head>
+<body>
+    <div class="card">
+        <h2>{{ 'Edit author' if editing else 'Add author' }}</h2>
+        {% with messages = get_flashed_messages(category_filter=["error"]) %}
+            {% for message in messages %}<div class="error">{{ message }}</div>{% endfor %}
+        {% endwith %}
+
+        <form method="POST" enctype="multipart/form-data" novalidate>
+            <div class="input-group">
+                <label for="name">Name</label>
+                <input type="text" id="name" name="name" value="{{ author.get('name', '') }}">
+            </div>
+            <div class="input-group">
+                <label for="country">Country</label>
+                <input type="text" id="country" name="country" value="{{ author.get('country') or '' }}">
+            </div>
+            <div class="input-group">
+                <label for="photo">Photo (optional)</label>
+                {% if author.get('photo') %}
+                <img class="preview preview-round" src="{{ author.photo }}" alt="">
+                {% endif %}
+                <input type="file" id="photo" name="photo" accept="image/*">
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn">{{ 'Save' if editing else 'Add' }}</button>
+                <a class="btn btn-secondary" href="{{ url_for('library') }}">Cancel</a>
+            </div>
+        </form>
+    </div>
+</body>
+</html>
